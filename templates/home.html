@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Spotting Discovered Attacks in Chess{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:900px;margin:0 auto;">
+
+  <h1 class="page-title" style="font-size:clamp(1.6rem,4vw,2.6rem); margin-bottom:6px;">
+    Spotting Discovered Attacks in Chess
+  </h1>
+
+  <p style="text-align:center; font-size:1.05rem; max-width:700px; margin:0 auto 32px; line-height:1.6;">
+    Learn to recognize patterns to set up a discovered attack<br>to stay ahead of your opponents!
+  </p>
+
+  <div class="row g-4 justify-content-center" style="max-width:720px;margin:0 auto;">
+    <!-- learn card: form that posts to /start, initializing a new session and redirecting to lesson 1 -->
+    <div class="col-12 col-sm-6">
+      <form action="/start" method="POST">
+        <button type="submit" class="quiz-card w-100" style="border:none;">
+          <div class="ci">📖</div>
+          <div class="ct">Start Learning!</div>
+          <div class="cd">Walk through what a discovered attack is, how it works, and see real examples.</div>
+        </button>
+      </form>
+    </div>
+
+    <!-- quiz card: link to the quiz home page where users pick a question category -->
+    <div class="col-12 col-sm-6">
+      <a href="/quiz" class="quiz-card">
+        <div class="ci">💡</div>
+        <div class="ct">Test Your Knowledge</div>
+        <div class="cd">Try identification, spotting threats, and putting it all together on a live board.</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- tip note: reminds users to complete the lessons before attempting the quiz -->
+  <p style="text-align:center; margin-top:36px; font-size:0.85rem; color:var(--tan-dark); font-style:italic;">
+    Tip: complete the lessons before taking the quiz for the best experience!
+  </p>
+</div>
+{% endblock %}
+
+{% block nav %}
+<nav class="chess-nav">
+  <a href="/" class="btn-nav btn-home-nav">HOME</a>
+  <button class="btn-nav btn-settings-nav" data-bs-toggle="modal" data-bs-target="#settingsModal">Chessboard Settings</button>
+</nav>
+{% endblock %}

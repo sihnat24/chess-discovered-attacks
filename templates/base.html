@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Discovered Attacks in Chess{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --tan: #b8864e; --tan-dark: #8c6535; --tan-light: #d4a96a;
+      --panel: #a07040; --text: #2a1a0a; --text-light: #f5e6d0;
+      --green-btn: #2a8a2a; --orange-btn: #e87c1e; --blue-btn: #0d8fd6;
+      --red-label: #cc2200; --purple-label: #5c3d8f;
+      --board-light-brown: #f0d9b5; --board-dark-brown: #b58863;
+      --board-light-green: #eeeed2; --board-dark-green: #769656;
+      --hl-blocker: rgba(92,61,143,0.7); --hl-target: rgba(204,34,0,0.7);
+      --hl-attacker: rgba(232,124,30,0.7); --hl-correct: rgba(0,180,80,0.6);
+      --hl-wrong: rgba(204,34,0,0.6); --hl-selected: rgba(13,143,214,0.55);
+    }
+    * { box-sizing: border-box; }
+    body { background: var(--tan); color: var(--text); font-family: 'Courier Prime','Courier New',monospace; min-height: 100vh; }
+
+    .chess-nav { display:flex; gap:12px; padding:12px 20px; background:var(--tan); align-items:center; }
+    .btn-nav { font-family:inherit; font-weight:700; font-size:1rem; border:2.5px solid var(--text); border-radius:4px; padding:6px 18px; text-decoration:none; cursor:pointer; transition:filter 0.15s; }
+    .btn-nav:hover { filter:brightness(1.12); }
+    .btn-home-nav { background:var(--orange-btn); color:#fff; }
+    .btn-settings-nav { background:var(--green-btn); color:#fff; }
+
+    .page-title { text-align:center; font-family:'Space Mono',monospace; font-weight:700; font-size:clamp(1.3rem,3vw,2rem); color:var(--tan-dark); margin:10px 0 4px; }
+
+    /* board: styles the chessboard grid, squares, labels, and piece rendering */
+    .board-wrap { display:inline-block; border:3px solid var(--text); box-shadow:4px 4px 14px rgba(0,0,0,0.4); }
+    .chess-board { display:grid; grid-template-columns:22px repeat(8,1fr); grid-template-rows:22px repeat(8,1fr) 22px; width:400px; height:460px; user-select:none; }
+    .board-label { display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:var(--tan-dark); background:var(--tan-light); }
+    .board-corner { background:var(--tan-light); }
+    .square { position:relative; display:flex; align-items:center; justify-content:center; transition:filter 0.1s; }
+    .sq-lb { background:var(--board-light-brown); } .sq-db { background:var(--board-dark-brown); }
+    .sq-lg { background:var(--board-light-green); } .sq-dg { background:var(--board-dark-green); }
+    .square.clickable { cursor:pointer; } .square.clickable:hover { filter:brightness(1.18); }
+    .square .overlay { position:absolute; inset:0; pointer-events:none; }
+    .hl-blocker .overlay { background:var(--hl-blocker); }
+    .hl-target .overlay { background:var(--hl-target); }
+    .hl-attacker .overlay { background:var(--hl-attacker); }
+    .hl-correct .overlay { background:var(--hl-correct); }
+    .hl-wrong .overlay { background:var(--hl-wrong); }
+    .hl-selected .overlay { background:var(--hl-selected); }
+    .piece { font-size:2.1rem; line-height:1; z-index:2; position:relative; pointer-events:none; }
+    .piece-white { color:#ffffff; -webkit-text-stroke:1.5px #222; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6)); }
+    .piece-black { color:#1a1a1a; -webkit-text-stroke:0.5px #555; filter:drop-shadow(0 1px 1px rgba(255,255,255,0.3)); }
+
+    /* buttons: shared styles for all chess-styled interactive button elements */
+    .btn-chess { font-family:'Courier Prime',monospace; font-weight:700; font-size:1rem; border:2px solid var(--text); border-radius:4px; padding:8px 20px; cursor:pointer; transition:filter 0.15s,transform 0.1s; text-decoration:none; display:inline-block; }
+    .btn-chess:hover { filter:brightness(1.1); transform:translateY(-1px); color:inherit; }
+    .btn-green  { background:var(--green-btn);  color:#fff; }
+    .btn-orange { background:var(--orange-btn); color:#fff; }
+    .btn-blue   { background:var(--blue-btn);   color:#fff; }
+    .btn-tan    { background:var(--tan-light);  color:var(--text); }
+    .btn-chess:active { transform:translateY(0); }
+
+    /* feedback popup: fixed centered overlay that shows correct/wrong feedback after a quiz answer */
+    #feedback-popup { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#dce8f5; border:2.5px solid #3a8abf; border-radius:8px; padding:20px 26px; max-width:360px; width:92%; z-index:1000; box-shadow:0 8px 28px rgba(0,0,0,0.4); font-family:'Courier Prime',monospace; font-size:0.95rem; text-align:center; }
+    #feedback-popup.correct-pop { background:#d4f0da; border-color:#2a8a2a; }
+    #overlay-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:999; }
+
+    /* key: sidebar legend box showing color meanings for blocker, attacker, and target */
+    .key-box { background:var(--tan-dark); border:2px solid var(--text); border-radius:4px; padding:10px 14px; }
+    .key-title { font-weight:700; font-size:0.95rem; color:var(--text-light); margin-bottom:8px; }
+    .key-item { padding:4px 10px; border-radius:3px; color:#fff; font-size:0.8rem; font-weight:700; margin-bottom:5px; text-align:center; }
+    .ki-blocker { background:var(--purple-label); } .ki-target { background:var(--red-label); } .ki-attacker { background:#7a1ea0; }
+
+    /* labels: colored inline tags used to identify piece roles like blocker, attacker, and target */
+    .comp-label { display:inline-block; padding:3px 10px; border-radius:3px; color:#fff; font-weight:700; font-size:0.95rem; margin-right:4px; }
+    .cl-blocker { background:var(--purple-label); } .cl-attacker { background:var(--orange-btn); } .cl-target { background:var(--red-label); }
+
+    /* quiz home cards: clickable category cards shown on the quiz selection screen */
+    .quiz-card { background:var(--panel); border:2.5px solid var(--text); border-radius:8px; padding:22px 16px; text-align:center; cursor:pointer; transition:transform 0.15s,filter 0.15s; color:var(--text-light); text-decoration:none; display:block; }
+    .quiz-card:hover { transform:translateY(-4px); filter:brightness(1.1); color:#fff; }
+    .quiz-card .ci { font-size:2.4rem; margin-bottom:10px; }
+    .quiz-card .ct { font-weight:700; font-size:1rem; }
+    .quiz-card .cd { font-size:0.82rem; margin-top:6px; opacity:0.85; }
+
+    /* hint: collapsible hint text box shown beneath the quiz instructions */
+    .hint-text { background:rgba(0,0,0,0.13); border-left:4px solid var(--blue-btn); padding:8px 14px; border-radius:3px; font-size:0.9rem; font-style:italic; display:none; }
+    .hint-text.show { display:block; }
+
+    /* progress: dot bar indicating lesson or quiz completion at the top of each page */
+    .prog-bar { display:flex; gap:5px; align-items:center; }
+    .prog-dot { width:11px; height:11px; border-radius:50%; border:2px solid var(--text); background:var(--tan-light); }
+    .prog-dot.active { background:var(--orange-btn); } .prog-dot.done { background:var(--green-btn); }
+
+    /* results: score rows, total score display, and pill badges on the results page */
+    .result-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--tan-dark); font-size:1rem; }
+    .score-pill { padding:3px 14px; border-radius:12px; font-weight:700; color:#fff; }
+    .sp-green { background:var(--green-btn); } .sp-orange { background:var(--orange-btn); } .sp-red { background:var(--red-label); }
+    .total-score { font-size:2.4rem; font-weight:700; color:var(--tan-dark); text-align:center; }
+
+    @media (max-width:600px) {
+      .chess-board { width:290px; height:330px; grid-template-columns:16px repeat(8,1fr); grid-template-rows:16px repeat(8,1fr) 16px; }
+      .piece { font-size:1.4rem; } .board-label { font-size:0.5rem; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+{% block nav %}
+<nav class="chess-nav">
+  <a href="/" class="btn-nav btn-home-nav">HOME</a>
+  <button class="btn-nav btn-settings-nav" data-bs-toggle="modal" data-bs-target="#settingsModal">Chessboard Settings</button>
+</nav>
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+<!-- settings modal: lets users switch the chessboard color theme between classic brown and green -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="background:var(--tan);font-family:'Courier Prime',monospace;border:2px solid var(--text);">
+      <div class="modal-header" style="border-bottom:1px solid var(--tan-dark);">
+        <h5 class="modal-title fw-bold">Chessboard Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fw-bold mb-2">Board Theme</p>
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn-chess btn-tan theme-btn flex-fill" data-theme="brown">Classic</button>
+          <button class="btn-chess btn-tan theme-btn flex-fill" data-theme="green">Green</button>
+        </div>
+        <small style="color:var(--tan-dark)">Theme applies to learning boards. Quiz boards use their preset theme unless overridden.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay-bg"></div>
+<div id="feedback-popup">
+  <div id="feedback-msg" class="mb-2"></div>
+  <button class="btn-chess btn-green mt-2" id="feedback-btn" style="width:100%">Continue →</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+const PIECE_UNICODE = {
+  wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
+  bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
+};
+
+function renderBoard(containerId, pieces, theme, clickableSide, onClickCb, flipped = false) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const files = flipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
+  const ranks = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+  let h = '<div class="board-corner"></div>';
+  for (const f of files) h += `<div class="board-label">${f}</div>`;
+  for (const rank of ranks) {
+    h += `<div class="board-label">${rank}</div>`;
+    for (let fi = 0; fi < 8; fi++) {
+      const f = files[fi];
+      const sq = f + rank;
+      const ri = ranks.indexOf(rank);
+      const isLight = (fi + ri) % 2 === 0;
+      const sqClass = theme === 'green' ? (isLight ? 'sq-lg':'sq-dg') : (isLight ? 'sq-lb':'sq-db');
+      const piece = pieces[sq];
+      const canClick = piece && clickableSide && piece.startsWith(clickableSide);
+      const cc = canClick ? 'clickable' : '';
+      const pc = piece ? (piece.startsWith('w') ? 'piece-white' : 'piece-black') : '';
+      const pu = piece ? `<span class="piece ${pc}">${PIECE_UNICODE[piece]||'?'}</span>` : '';
+      h += `<div class="square ${sqClass} ${cc}" data-square="${sq}" data-piece="${piece||''}">${pu}<div class="overlay"></div></div>`;
+    }
+  }
+  h += '<div class="board-corner"></div>';
+  for (const f of files) h += `<div class="board-label">${f}</div>`;
+  el.innerHTML = h;
+  if (clickableSide && onClickCb) {
+    el.querySelectorAll('.square.clickable').forEach(s => {
+      s.addEventListener('click', () => onClickCb(s.dataset.square, s.dataset.piece));
+    });
+  }
+}
+
+function highlightSquare(containerId, sq, hlClass) {
+  const el = document.querySelector(`#${containerId} [data-square="${sq}"]`);
+  if (el) { el.classList.add(hlClass); }
+}
+
+// feedback popup: show a centered overlay with a result message and a continue button
+function showFeedback(msg, isCorrect, onNext) {
+  const popup = document.getElementById('feedback-popup');
+  const bg = document.getElementById('overlay-bg');
+  document.getElementById('feedback-msg').textContent = msg;
+  popup.className = isCorrect ? 'correct-pop' : '';
+  popup.style.display = 'block';
+  bg.style.display = 'block';
+  document.getElementById('feedback-btn').onclick = () => {
+    popup.style.display = 'none';
+    bg.style.display = 'none';
+    if (onNext) onNext();
+  };
+}
+
+// theme buttons: save the selected theme to localstorage when a theme option is clicked
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    localStorage.setItem('boardTheme', btn.dataset.theme);
+    btn.closest('.modal')?.querySelector('.btn-close')?.click();
+  });
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}Lesson {{ lesson_num }} – {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-3" style="max-width:1100px;margin:0 auto;">
+
+  <!-- progress bar: shows the current lesson number and a dot indicator for overall progress -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="page-title mb-0" style="font-size:clamp(1.2rem,3vw,1.8rem);">{{ lesson.title }}</h2>
+    <div class="d-flex align-items-center gap-2">
+      <span style="font-size:0.85rem;font-weight:700;">{{ lesson_num }}/{{ total }}</span>
+      <div class="prog-bar">
+        {% for i in range(1, total+1) %}
+          <div class="prog-dot {% if i < lesson_num %}done{% elif i == lesson_num %}active{% endif %}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- intro layout: simple text-only view with piece icons shown for the opening lesson -->
+  {% if lesson.type == 'intro' %}
+  <div class="row g-4 align-items-center justify-content-center">
+    <div class="col-12 col-md-6">
+      <p style="font-size:1.1rem;line-height:1.7;">{{ lesson.content }}</p>
+      <p style="font-size:1rem;line-height:1.7;font-style:italic;color:var(--tan-dark);">{{ lesson.subtext }}</p>
+      <div class="d-flex justify-content-center gap-4 mt-4" style="font-size:3rem;">
+        <span title="Queen">♛</span>
+        <span title="Bishop">♝</span>
+        <span title="Rook">♜</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- anatomy layout: side-by-side view with component labels and a toggleable demo board -->
+  {% elif lesson.type == 'anatomy' %}
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-md-6">
+      <p style="font-size:1.05rem;margin-bottom:20px;">{{ lesson.content }}</p>
+      {% for c in lesson.components %}
+      <div class="mb-3">
+        <span class="comp-label cl-{{ c.label|lower }}">{{ c.label }}</span>
+        <span style="font-size:0.95rem;">{{ c.desc }}</span>
+      </div>
+      {% endfor %}
+
+      <!-- attacker type toggle: switches the demo board between bishop, rook, and queen examples -->
+      <div class="mt-3">
+        <p class="fw-bold mb-2" style="font-size:0.9rem;">Visualize with:</p>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn-chess btn-blue attacker-toggle active" data-piece="bishop" onclick="setAttackerDemo('bishop')">Bishop</button>
+          <button class="btn-chess btn-tan attacker-toggle" data-piece="rook" onclick="setAttackerDemo('rook')">Rook</button>
+          <button class="btn-chess btn-tan attacker-toggle" data-piece="queen" onclick="setAttackerDemo('queen')">Queen</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 d-flex flex-column align-items-center">
+      <div class="board-wrap">
+        <div class="chess-board" id="anatomy-board"></div>
+      </div>
+      <div class="key-box mt-3" style="width:100%;max-width:260px;">
+        <div class="key-title">KEY</div>
+        <div class="key-item ki-blocker">Blocker (moves)</div>
+        <div class="key-item ki-attacker">Hidden Attacker</div>
+        <div class="key-item ki-target">Target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- animation layout: board with play/reset buttons to show a discovered attack in motion -->
+  {% elif lesson.type == 'animation' %}
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-md-5">
+      <p style="font-size:1.05rem;line-height:1.7;">{{ lesson.content }}</p>
+      <div class="key-box mt-3">
+        <div class="key-title">KEY</div>
+        <div class="key-item ki-blocker">Decoy piece</div>
+        <div class="key-item ki-target">Target</div>
+        <div class="key-item ki-attacker">Hidden Attacker</div>
+      </div>
+      <button class="btn-chess btn-blue mt-3" id="play-anim-btn" onclick="playAnimation()">▶ Play Move</button>
+      <button class="btn-chess btn-tan mt-3" id="reset-anim-btn" onclick="resetAnimation()" style="display:none">↺ Reset</button>
+    </div>
+    <div class="col-12 col-md-7 d-flex justify-content-center">
+      <div>
+        <div class="board-wrap">
+          <div class="chess-board" id="anim-board"></div>
+        </div>
+        <p id="anim-caption" style="text-align:center;margin-top:8px;font-style:italic;font-size:0.9rem;color:var(--tan-dark);min-height:1.2em;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- double attack layout: illustrates how moving the blocker can create two simultaneous threats -->
+  {% elif lesson.type == 'double' %}
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-md-6">
+      {% for b in lesson.bullets %}
+      <div class="d-flex gap-2 mb-3">
+        <span style="color:var(--tan-dark);font-size:1.2rem;flex-shrink:0;">●</span>
+        <p style="font-size:1rem;line-height:1.7;margin:0;">{{ b }}</p>
+      </div>
+      {% endfor %}
+      <div class="key-box mt-3">
+        <div class="key-title">KEY</div>
+        <div class="key-item ki-blocker">Blocking piece</div>
+        <div class="key-item ki-target">Target</div>
+        <div class="key-item ki-attacker">Hidden Attacker</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 d-flex flex-column align-items-center">
+      <p class="fw-bold" style="color:var(--red-label);">Now there are two targets!</p>
+      <div class="board-wrap">
+        <div class="chess-board" id="double-board"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- example / reveal layout: shows a position to study, or reveals the answer move after the example -->
+  {% else %}
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-md-5">
+      <p style="font-size:1.05rem;line-height:1.7;">{{ lesson.content }}</p>
+      {% if lesson.type == 'reveal' %}
+      <div class="key-box mt-3">
+        <div class="key-title">KEY</div>
+        <div class="key-item ki-blocker">Blocking piece</div>
+        <div class="key-item ki-target">Target</div>
+        <div class="key-item ki-attacker">Hidden Attacker</div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-12 col-md-7 d-flex justify-content-center">
+      <div>
+        <p style="font-size:0.85rem;font-weight:700;color:var(--tan-dark);text-align:center;margin-bottom:4px;">white's move</p>
+        <div class="board-wrap">
+          <div class="chess-board" id="example-board"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- nav buttons: previous/next lesson links, or a link to the quiz when on the final lesson -->
+  <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
+    {% if lesson_num > 1 %}
+    <a href="/learn/{{ lesson_num - 1 }}" class="btn-chess btn-tan">← Previous</a>
+    {% else %}
+    <a href="/" class="btn-chess btn-tan">← Home</a>
+    {% endif %}
+
+    {% if lesson.next %}
+    <a href="/learn/{{ lesson.next }}" class="btn-chess btn-green">Next →</a>
+    {% else %}
+    <a href="/quiz" class="btn-chess btn-orange">Take the Quiz! →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const LESSON_TYPE = "{{ lesson.type }}";
+const LESSON_BOARD = {{ lesson.board | tojson if lesson.board is defined else '{}' }};
+const BOARD_THEME = localStorage.getItem('boardTheme') || 'brown';
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (LESSON_TYPE === 'anatomy') {
+    setAttackerDemo('bishop');
+  } else if (LESSON_TYPE === 'animation') {
+    buildAnimBoard(false);
+  } else if (LESSON_TYPE === 'double') {
+    const pieces = {
+      'h8':'bQ', 'b3':'wP', 'b2':'wB', 'b1':'wR',
+      'a5':'bK'
+    };
+    renderBoard('double-board', pieces, BOARD_THEME, null, null);
+    highlightSquare('double-board','b3','hl-blocker');
+    highlightSquare('double-board','b1','hl-attacker');
+    highlightSquare('double-board','h8','hl-target');
+    highlightSquare('double-board','a5','hl-target');
+  } else if (LESSON_TYPE === 'example' || LESSON_TYPE === 'reveal') {
+    renderBoard('example-board', LESSON_BOARD, BOARD_THEME, null, null);
+    if (LESSON_TYPE === 'reveal') {
+      highlightSquare('example-board','a8','hl-attacker');
+      highlightSquare('example-board','g7','hl-blocker');
+      highlightSquare('example-board','a7','hl-target');
+      highlightSquare('example-board','f1','hl-target');
+    }
+  }
+});
+
+// anatomy demo: renders a demo board for the selected attacker type and highlights the three roles
+function setAttackerDemo(piece) {
+  document.querySelectorAll('.attacker-toggle').forEach(b => {
+    b.className = b.dataset.piece === piece
+      ? 'btn-chess btn-blue attacker-toggle'
+      : 'btn-chess btn-tan attacker-toggle';
+  });
+
+  const demos = {
+    bishop: {
+      pieces: { 'g8':'bQ', 'c4':'wP', 'a2':'wB' },
+      blocker:'c4', attacker:'a2', target:'g8'
+    },
+    rook: {
+      pieces: { 'g7':'bK', 'g4':'wP', 'g1':'wR' },
+      blocker:'g4', attacker:'g1', target:'g7'
+    },
+    queen: {
+      pieces: { 'h8':'bQ', 'e5':'wN', 'a5':'wQ' },
+      blocker:'e5', attacker:'a5', target:'h8'
+    }
+  };
+
+  const d = demos[piece];
+  renderBoard('anatomy-board', d.pieces, BOARD_THEME, null, null);
+  highlightSquare('anatomy-board', d.blocker, 'hl-blocker');
+  highlightSquare('anatomy-board', d.attacker, 'hl-attacker');
+  highlightSquare('anatomy-board', d.target, 'hl-target');
+}
+
+// animation: before/after board states used by playAnimation and resetAnimation
+const ANIM_BEFORE = { 'b8':'bK', 'f6':'bQ', 'c4':'wP', 'b1':'wR', 'a3':'wB' };
+const ANIM_AFTER  = { 'b8':'bK', 'f6':'bQ', 'e6':'wP', 'b1':'wR', 'a3':'wB' };
+
+function buildAnimBoard(afterMove) {
+  const p = afterMove ? ANIM_AFTER : ANIM_BEFORE;
+  renderBoard('anim-board', p, BOARD_THEME, null, null);
+  if (!afterMove) {
+    highlightSquare('anim-board','c4','hl-blocker');
+    highlightSquare('anim-board','a3','hl-attacker');
+    highlightSquare('anim-board','b8','hl-target');
+  } else {
+    highlightSquare('anim-board','e6','hl-blocker');
+    highlightSquare('anim-board','a3','hl-attacker');
+    highlightSquare('anim-board','b8','hl-target');
+    highlightSquare('anim-board','f6','hl-target');
+  }
+}
+
+function playAnimation() {
+  buildAnimBoard(true);
+  document.getElementById('anim-caption').textContent = 'The pawn moves, revealing the bishop\'s diagonal — check AND the queen is attacked!';
+  document.getElementById('play-anim-btn').style.display = 'none';
+  document.getElementById('reset-anim-btn').style.display = 'inline-block';
+}
+
+function resetAnimation() {
+  buildAnimBoard(false);
+  document.getElementById('anim-caption').textContent = '';
+  document.getElementById('play-anim-btn').style.display = 'inline-block';
+  document.getElementById('reset-anim-btn').style.display = 'none';
+}
+</script>
+{% endblock %}

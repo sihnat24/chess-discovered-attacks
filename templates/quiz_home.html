@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Test Your Knowledge – Discovered Attacks{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:800px;margin:0 auto;">
+
+  <h1 class="page-title mb-2">Test Your Knowledge</h1>
+  <p style="text-align:center;font-size:0.95rem;max-width:600px;margin:0 auto 28px;">
+    Click on any question type to start, or take a mixed quiz covering all question types!
+  </p>
+
+  <div class="row g-3 justify-content-center mb-4">
+    <div class="col-12 col-sm-4">
+      <a href="/quiz/1" class="quiz-card">
+        <div class="ci">🔍</div>
+        <div class="ct">Identification</div>
+        <div class="cd">Can you identify the attacker, target, and decoy?</div>
+      </a>
+    </div>
+    <div class="col-12 col-sm-4">
+      <a href="/quiz/3" class="quiz-card">
+        <div class="ci">🛡️</div>
+        <div class="ct">Spot the Opponent's Attack</div>
+        <div class="cd">Are you being threatened by a discovered attack? Identify and stop the threat!</div>
+      </a>
+    </div>
+    <div class="col-12 col-sm-4">
+      <a href="/quiz/4" class="quiz-card">
+        <div class="ci">♟️</div>
+        <div class="ct">Putting It Together</div>
+        <div class="cd">Find the move and complete it!</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="text-center">
+    <a href="/quiz/1" class="btn-chess btn-orange" style="font-size:1.05rem;padding:10px 30px;">
+      Mixed Quiz — All Questions →
+    </a>
+  </div>
+
+  <p style="text-align:center;margin-top:20px;font-size:0.8rem;font-style:italic;color:var(--tan-dark);">
+    Below are example questions from each area.
+  </p>
+</div>
+{% endblock %}

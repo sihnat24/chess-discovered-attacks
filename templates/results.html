@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results – Discovered Attacks{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:700px;margin:0 auto;">
+
+  <h1 class="page-title mb-4">Quiz Results</h1>
+
+  <!-- total score: large numeric display showing how many questions the user got right out of the total -->
+  <div class="total-score mb-1">{{ total_correct }} / {{ total_questions }}</div>
+  <p style="text-align:center;font-size:0.85rem;color:var(--tan-dark);margin-bottom:24px;">total score</p>
+
+  <!-- category breakdown: per-category score rows inside a styled panel, color-coded by performance -->
+  <div style="background:var(--panel);border:2px solid var(--text);border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+    {% for cat, data in categories.items() %}
+      {% set pct = (data.correct / data.total) if data.total else 0 %}
+      {% set pill = 'sp-green' if pct == 1.0 else ('sp-orange' if pct >= 0.5 else 'sp-red') %}
+    <div class="result-row">
+      <span style="color:var(--text-light);font-size:0.95rem;">{{ cat }}</span>
+      <span class="score-pill {{ pill }}">{{ data.correct }} / {{ data.total }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- feedback message: personalized text encouraging the user based on their overall percentage score -->
+  <div style="background:rgba(0,0,0,0.12);border-left:4px solid var(--orange-btn);padding:14px 18px;border-radius:4px;margin-bottom:28px;font-size:0.95rem;line-height:1.65;">
+    {{ feedback }}
+  </div>
+
+  <!-- action buttons: links to retry the quiz, return home, or go back through the lessons -->
+  <div class="d-flex gap-3 justify-content-center flex-wrap">
+    <a href="/quiz/1" class="btn-chess btn-orange">Retry Quiz</a>
+    <a href="/" class="btn-chess btn-tan">Back to Home</a>
+    <a href="/learn/1" class="btn-chess btn-blue">Review Lessons</a>
+  </div>
+
+</div>
+{% endblock %}

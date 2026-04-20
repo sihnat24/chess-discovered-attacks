@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Question {{ q_num }} – {{ question.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* quiz-specific overrides: styles that apply only to the quiz page, extending base.html defaults */
+  .quiz-status {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 4px;
+    border: 2px solid var(--text);
+  }
+  .status-identification { background: #4a2080; color: #fff; }
+  .status-spot           { background: #8a1a00; color: #fff; }
+  .status-putting        { background: #1a5a00; color: #fff; }
+
+  .selected-indicator {
+    display: none;
+    background: rgba(13,143,214,0.15);
+    border: 2px solid var(--blue-btn);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+  .selected-indicator.show { display: block; }
+
+  #submit-btn { display: none; }
+  #submit-btn.show { display: inline-block; }
+
+  .square.selected-sq { outline: 3px solid var(--blue-btn); outline-offset: -3px; }
+
+  .move-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--tan-dark);
+  }
+
+  /* feedback popup correct/wrong styling: adds a checkmark prefix for correct answers and an x for wrong ones */
+  #feedback-popup { font-family: 'Courier Prime', monospace; }
+  #feedback-popup.correct-pop #feedback-icon::before { content: '✓ '; color: #2a8a2a; }
+  #feedback-popup:not(.correct-pop) #feedback-icon::before { content: '✗ '; color: var(--red-label); }
+
+  .q-category-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .cat-identification { background: var(--purple-label); }
+  .cat-spot           { background: var(--red-label); }
+  .cat-putting        { background: var(--green-btn); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-3" style="max-width:1100px;margin:0 auto;">
+
+  <!-- header row: shows the category badge, question title, and the progress dot bar -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      {% set cat_class = 'cat-identification' if 'Identification' in question.category else ('cat-spot' if 'Spot' in question.category else 'cat-putting') %}
+      <span class="q-category-badge {{ cat_class }}">{{ question.category }}</span>
+      <h2 class="page-title mb-0" style="font-size:clamp(1.1rem,2.5vw,1.7rem);">{{ question.title }}</h2>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span style="font-size:0.85rem;font-weight:700;">{{ q_num }}/{{ total }}</span>
+      <div class="prog-bar">
+        {% for i in range(1, total+1) %}
+          <div class="prog-dot {% if i < q_num %}done{% elif i == q_num %}active{% endif %}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- main layout: three-column grid with instructions left, interactive board center, and piece key right -->
+  <div class="row g-3 align-items-start">
+
+    <!-- left panel: question instructions, selected piece info, submit button, hint toggle, and quiz menu link -->
+    <div class="col-12 col-md-3 order-2 order-md-1">
+      <div class="move-tag mb-2">white's move</div>
+      <p style="font-size:0.95rem;line-height:1.65;">{{ question.instructions }}</p>
+
+      <div id="selected-info" class="selected-indicator">
+        Selected: <span id="selected-label">—</span>
+      </div>
+
+      <button id="submit-btn" class="btn-chess btn-orange mt-3 w-100" onclick="submitAnswer()">
+        Confirm Selection
+      </button>
+
+      <div class="mt-3">
+        <button class="btn-chess btn-blue w-100" onclick="toggleHint()">💡 Hint</button>
+        <div id="hint-box" class="hint-text mt-2">{{ question.hint }}</div>
+      </div>
+
+      <a href="/quiz" class="btn-chess btn-tan mt-3 w-100" style="text-align:center;">← Quiz Menu</a>
+    </div>
+
+    <!-- center panel: renders the interactive chessboard where the user clicks to select their answer -->
+    <div class="col-12 col-md-6 order-1 order-md-2 d-flex flex-column align-items-center">
+      <div class="board-wrap">
+        <div class="chess-board" id="quiz-board"></div>
+      </div>
+      <div id="board-caption" style="text-align:center;font-size:0.85rem;font-style:italic;color:var(--tan-dark);margin-top:6px;min-height:1.2em;"></div>
+    </div>
+
+    <!-- right panel: lists all pieces on the board by position and shows the color-coded role key -->
+    <div class="col-12 col-md-3 order-3">
+      <div style="background:var(--panel);border:2px solid var(--text);border-radius:4px;padding:10px 12px;">
+        <p class="fw-bold mb-1" style="color:var(--text-light);font-size:0.85rem;">Board Layout</p>
+        <div id="move-list" style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--text-light);max-height:160px;overflow-y:auto;line-height:1.7;"></div>
+      </div>
+
+      <div class="key-box mt-3">
+        <div class="key-title">KEY</div>
+        <div class="key-item ki-blocker">Blocker/Decoy</div>
+        <div class="key-item ki-target">Target</div>
+        <div class="key-item ki-attacker">Hidden Attacker</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const Q_NUM     = {{ q_num }};
+const Q_TOTAL   = {{ total }};
+const Q_PIECES  = {{ question.pieces | tojson }};
+const Q_THEME   = "{{ question.board_theme }}";
+const Q_CLICKABLE = "{{ question.clickable }}";
+const Q_ANS_SQ  = "{{ question.answer_square }}";
+const Q_FLIPPED = {{ 'true' if question.get('perspective','white') == 'black' else 'false' }};
+
+let selectedSquare = null;
+let selectedPiece  = null;
+let answered       = false;
+
+const PIECE_NAMES = {
+  wK:'White King', wQ:'White Queen', wR:'White Rook', wB:'White Bishop', wN:'White Knight', wP:'White Pawn',
+  bK:'Black King', bQ:'Black Queen', bR:'Black Rook', bB:'Black Bishop', bN:'Black Knight', bP:'Black Pawn'
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderBoard('quiz-board', Q_PIECES, Q_THEME, Q_CLICKABLE, onPieceClick, Q_FLIPPED);
+  buildMoveList();
+});
+
+function onPieceClick(sq, piece) {
+  if (answered) return;
+
+  // deselect the previously selected square before applying the new selection
+  document.querySelectorAll('#quiz-board .square').forEach(s => {
+    s.classList.remove('selected-sq', 'hl-selected');
+    s.querySelector('.overlay').style.background = '';
+  });
+
+  selectedSquare = sq;
+  selectedPiece  = piece;
+
+  // highlight the newly clicked square with the blue selection overlay
+  const el = document.querySelector(`#quiz-board [data-square="${sq}"]`);
+  if (el) {
+    el.classList.add('hl-selected');
+  }
+
+  // update the selected piece label below the instructions and reveal the submit button
+  const pname = PIECE_NAMES[piece] || piece;
+  document.getElementById('selected-label').textContent = `${pname} on ${sq}`;
+  document.getElementById('selected-info').classList.add('show');
+  document.getElementById('submit-btn').classList.add('show');
+}
+
+function submitAnswer() {
+  if (!selectedSquare || answered) return;
+
+  $.ajax({
+    url: `/quiz/${Q_NUM}/answer`,
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({ square: selectedSquare, piece: selectedPiece }),
+    success: (resp) => {
+      answered = true;
+
+      // highlight the correct answer square in green regardless of whether the user was right or wrong
+      const correctEl = document.querySelector(`#quiz-board [data-square="${resp.answer_square}"]`);
+      if (correctEl) {
+        correctEl.classList.remove('hl-selected','hl-wrong','hl-blocker','hl-attacker','hl-target');
+        correctEl.classList.add('hl-correct');
+      }
+
+      // if the user selected the wrong square, also highlight their pick in red
+      if (!resp.correct && selectedSquare !== resp.answer_square) {
+        const wrongEl = document.querySelector(`#quiz-board [data-square="${selectedSquare}"]`);
+        if (wrongEl) {
+          wrongEl.classList.remove('hl-selected');
+          wrongEl.classList.add('hl-wrong');
+        }
+      }
+
+      document.getElementById('submit-btn').classList.remove('show');
+
+      const isLast = Q_NUM >= Q_TOTAL;
+      const nextUrl = isLast ? '/results' : `/quiz/${Q_NUM + 1}`;
+      const btnText = isLast ? 'See Results →' : 'Next Question →';
+
+      showFeedback(resp.message, resp.correct, () => {
+        window.location.href = nextUrl;
+      });
+      document.getElementById('feedback-btn').textContent = btnText;
+    }
+  });
+}
+
+function toggleHint() {
+  const box = document.getElementById('hint-box');
+  box.classList.toggle('show');
+}
+
+function buildMoveList() {
+  const files = ['a','b','c','d','e','f','g','h'];
+  const ranks = [8,7,6,5,4,3,2,1];
+  const lines = [];
+  for (const rank of ranks) {
+    for (const file of files) {
+      const sq = file + rank;
+      const p = Q_PIECES[sq];
+      if (p) {
+        const n = p[0] === 'w' ? 'White' : 'Black';
+        const type = ({K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'Pawn'})[p[1]] || p[1];
+        lines.push(`${n} ${type}: ${sq}`);
+      }
+    }
+  }
+  document.getElementById('move-list').innerHTML = lines.join('<br>');
+}
+</script>
+{% endblock %}
