@@ -170,21 +170,20 @@ document.addEventListener('DOMContentLoaded', () => {
     buildAnimBoard(false);
   } else if (LESSON_TYPE === 'double') {
     const pieces = {
-      'h8':'bQ', 'b3':'wP', 'b2':'wB', 'b1':'wR',
-      'a5':'bK'
+      'b5':'bP', 'h8':'bK', 'b2':'wB', 'c3':'wR',
     };
     renderBoard('double-board', pieces, BOARD_THEME, null, null);
-    highlightSquare('double-board','b3','hl-blocker');
-    highlightSquare('double-board','b1','hl-attacker');
+    highlightSquare('double-board','c3','hl-blocker');
+    highlightSquare('double-board','b2','hl-attacker');
     highlightSquare('double-board','h8','hl-target');
-    highlightSquare('double-board','a5','hl-target');
+    highlightSquare('double-board','b5','hl-target');
   } else if (LESSON_TYPE === 'example' || LESSON_TYPE === 'reveal') {
     renderBoard('example-board', LESSON_BOARD, BOARD_THEME, null, null);
     if (LESSON_TYPE === 'reveal') {
-      highlightSquare('example-board','a8','hl-attacker');
+      highlightSquare('example-board','h1','hl-attacker');
       highlightSquare('example-board','g7','hl-blocker');
-      highlightSquare('example-board','a7','hl-target');
-      highlightSquare('example-board','f1','hl-target');
+      highlightSquare('example-board','a8','hl-target');
+      highlightSquare('example-board','f7','hl-target');
     }
   }
 });
@@ -220,21 +219,20 @@ function setAttackerDemo(piece) {
 }
 
 // animation: before/after board states used by playAnimation and resetAnimation
-const ANIM_BEFORE = { 'b8':'bK', 'f6':'bQ', 'c4':'wP', 'b1':'wR', 'a3':'wB' };
-const ANIM_AFTER  = { 'b8':'bK', 'f6':'bQ', 'e6':'wP', 'b1':'wR', 'a3':'wB' };
+const ANIM_BEFORE = { 'c8':'bK', 'h6':'bQ', 'g1':'wQ', 'c1':'wR', 'c5':'wB' };
+const ANIM_AFTER  = { 'c8':'bK', 'h6':'bQ', 'g1':'wQ', 'c1':'wR', 'e3':'wB' };
 
 function buildAnimBoard(afterMove) {
   const p = afterMove ? ANIM_AFTER : ANIM_BEFORE;
   renderBoard('anim-board', p, BOARD_THEME, null, null);
   if (!afterMove) {
-    highlightSquare('anim-board','c4','hl-blocker');
-    highlightSquare('anim-board','a3','hl-attacker');
-    highlightSquare('anim-board','b8','hl-target');
+    highlightSquare('anim-board','c5','hl-blocker');
+    highlightSquare('anim-board','c1','hl-attacker');
   } else {
-    highlightSquare('anim-board','e6','hl-blocker');
-    highlightSquare('anim-board','a3','hl-attacker');
-    highlightSquare('anim-board','b8','hl-target');
-    highlightSquare('anim-board','f6','hl-target');
+    highlightSquare('anim-board','e3','hl-blocker');
+    highlightSquare('anim-board','c1','hl-attacker');
+    highlightSquare('anim-board','c8','hl-target');
+    highlightSquare('anim-board','h6','hl-target');
   }
 }
 

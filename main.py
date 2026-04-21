@@ -23,9 +23,6 @@ LESSONS = [
             {"label": "Target", "color": "#cc2200", "desc": "the piece threatened by the new lane of attack"}
         ],
         "type": "anatomy",
-        "board": {
-            "g8": "bQ", "b2": "wB", "c3": "wP"
-        },
         "next": 3
     },
     {
@@ -33,10 +30,6 @@ LESSONS = [
         "title": "Watch It Play Out",
         "content": "When the bishop moves, the king will get checked AND the bishop attacks the queen!",
         "type": "animation",
-        "board": {
-            "b8": "bK", "g8": "bQ",
-            "b2": "wB", "c3": "wP", "b1": "wR"
-        },
         "next": 4
     },
     {
@@ -48,9 +41,6 @@ LESSONS = [
             "If you can create 2 attacks at once, you can guarantee the opponent loses some material!"
         ],
         "type": "double",
-        "board": {
-            "h8": "bQ", "b2": "wB", "c3": "wP", "b1": "wR"
-        },
         "next": 5
     },
     {
@@ -59,9 +49,11 @@ LESSONS = [
         "content": "Here, we can move the rook to create two threats at the same time. Do you see the move?",
         "type": "example",
         "board": {
-            "d8": "bK", "a7": "bQ", "b6": "bP", "b5": "bN",
-            "d4": "bP",
-            "a8": "wR", "g2": "wR", "f1": "wB", "b1": "wK"
+            "a8": "bR", "a6": "bP", "b6": "bP", "c5": "bR",
+            "d4": "bP", "c7": "bQ", "d7": "bP", "e7": "bP",
+            "e7": "bP", "f7": "bB", "d8": "bK",
+            "a2": "wP", "b2": "wP", "c2": "wP", "e2": "wQ",
+            "g2": "wR", "b1": "wK", "h1": "wB"
         },
         "next": 6
     },
@@ -71,9 +63,11 @@ LESSONS = [
         "content": "After rook to g7, black is unable to defend both the rook and bishop simultaneously!",
         "type": "reveal",
         "board": {
-            "d8": "bK", "a7": "bQ", "b6": "bP", "b5": "bN",
-            "d4": "bP",
-            "a8": "wR", "g7": "wR", "f1": "wB", "b1": "wK"
+            "a8": "bR", "a6": "bP", "b6": "bP", "c5": "bR",
+            "d4": "bP", "c7": "bQ", "d7": "bP", "e7": "bP",
+            "e7": "bP", "f7": "bB", "d8": "bK",
+            "a2": "wP", "b2": "wP", "c2": "wP", "e2": "wQ",
+            "g7": "wR", "b1": "wK", "h1": "wB"
         },
         "next": None
     }
@@ -136,7 +130,7 @@ QUIZ_QUESTIONS = [
         "answer_square": "a1",
         "wrong_message": "Not quite! Look for a line of attack that is about to be opened up.",
         "correct_message": "Correct! The white king on a1 is the target — if black moves the knight on e5, the queen reveals an attack!",
-        "board_theme": "brown",
+        "board_theme": "green",
         "pieces": {
             "a8": "bR", "d8": "bK", "h8": "bR",
             "b7": "bB", "e7": "bP", "f7": "bP",
@@ -155,11 +149,11 @@ QUIZ_QUESTIONS = [
         "id": 4,
         "category": "Spot the Opponent's Attack",
         "title": "Spot the Opponent's Attack!",
-        "instructions": "Black's move. White is threatening a discovered attack. Click the white piece you should move to create the discovered attack.",
+        "instructions": "White is threatening a discovered attack. Click the white piece you should move to create the discovered attack.",
         "hint": "Which white piece is blocking a long-range attacker from targeting a black piece?",
-        "answer_square": "e5",
-        "wrong_message": "Not quite! Look for a white piece that, when moved, reveals a long-range attacker behind it.",
-        "correct_message": "Correct! The knight on e5 is the blocking piece — moving it reveals a devastating attack on black's position!",
+        "answer_square": "b3",
+        "wrong_message": "Not quite! Here the blocker may even move to take a piece. Look for something that can lure the target out!",
+        "correct_message": "Correct! The bishop on b3 is the blocking piece — moving it to take the pawn on f7 is checkmate for black, alongside rook at e5!",
         "board_theme": "green",
         "perspective": "black",
         "pieces": {
