@@ -1,6 +1,6 @@
 /**
- * learn.js
- * handles the learn page boards — renders static illustration boards for each lesson
+ * learn js summary
+ * this coe handles the learn page boards  andrenders static illustration boards for each lesson
  * and manages the attacker-type toggle on lesson 2
  */
 
@@ -53,7 +53,7 @@ $(document).ready(function () {
     if (!pieces) return;
 
     if (LESSON_NUM === 2) {
-        // lesson 2 uses a toggle board; initialize it with the bishop example by default
+        // lesson 2 uses a toggle board; initialize it with the bihop example by default
         renderBoard(boardEl, pieces['Bishop'], { clickable: null });
     } else if (Array.isArray(pieces)) {
         renderBoard(boardEl, pieces, { clickable: null });

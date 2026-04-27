@@ -1,5 +1,5 @@
 /**
- * quiz.js
+ * short lil summary of quiz.js
  * handles all quiz page interactivity:
  * - renders the chessboard with clickable pieces for the active side
  * - submits the selected square as an answer via ajax and evaluates the response
