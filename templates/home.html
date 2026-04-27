@@ -9,42 +9,39 @@
   </h1>
 
   <p style="text-align:center; font-size:1.05rem; max-width:700px; margin:0 auto 32px; line-height:1.6;">
-    Learn to recognize patterns to set up a discovered attack<br>to stay ahead of your opponents!
+    Learn to recognize discovered attack patterns<br>and stay one step ahead of your opponent.
   </p>
 
   <div style="max-width:700px; margin:0 auto 28px; background:rgba(255,255,255,0.18); border:2px solid var(--text); border-radius:8px; padding:16px 18px;">
-  <div style="font-weight:700; margin-bottom:8px; text-align:center;">How this works</div>
-  <div style="font-size:0.95rem; line-height:1.7; text-align:center;">
-    First, go through a short lesson on the blocker, attacker, and target.
-    Then, test yourself on interactive quiz positions and get a score at the end.
+    <div style="font-weight:700; margin-bottom:8px; text-align:center;">Quick Start Guide</div>
+    <div style="font-size:0.95rem; line-height:1.7; text-align:center;">
+      Begin with a short lesson covering the blocker, attacker, and target.
+      Then solve interactive quiz positions and view your final score.
+    </div>
   </div>
-</div>
 
   <div class="row g-4 justify-content-center" style="max-width:720px;margin:0 auto;">
-    <!-- learn card: form that posts to /start, initializing a new session and redirecting to lesson 1 -->
     <div class="col-12 col-sm-6">
       <form action="/start" method="POST">
         <button type="submit" class="quiz-card w-100" style="border:none;">
           <div class="ci">📖</div>
-          <div class="ct">Start Learning!</div>
-          <div class="cd">Walk through what a discovered attack is, how it works, and see real examples.</div>
+          <div class="ct">Start Learning</div>
+          <div class="cd">Learn the core idea, see how it works, and study real examples.</div>
         </button>
       </form>
     </div>
 
-    <!-- quiz card: link to the quiz home page where users pick a question category -->
     <div class="col-12 col-sm-6">
       <a href="/quiz" class="quiz-card">
         <div class="ci">💡</div>
         <div class="ct">Test Your Knowledge</div>
-        <div class="cd">Try identification, spotting threats, and putting it all together on a live board.</div>
+        <div class="cd">Practice identification, stop threats, and solve full board challenges.</div>
       </a>
     </div>
   </div>
 
-  <!-- tip note: reminds users to complete the lessons before attempting the quiz -->
   <p style="text-align:center; margin-top:36px; font-size:0.85rem; color:var(--tan-dark); font-style:italic;">
-    Tip: complete the lessons before taking the quiz for the best experience!
+    Tip: Complete the lessons first for the best quiz experience.
   </p>
 </div>
 {% endblock %}
