@@ -31,7 +31,22 @@
   #submit-btn { display: none; }
   #submit-btn.show { display: inline-block; }
 
-  .square.selected-sq { outline: 3px solid var(--blue-btn); outline-offset: -3px; }
+  .square.selected-sq { outline: 3px solid #16a34a; outline-offset: -3px; }
+  .hl-selected .overlay { background: rgba(22, 163, 74, 0.55); }
+
+  /* gray dot on empty squares the selected piece can reach */
+  .square.move-dot::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28%; height: 28%; border-radius: 50%;
+    background: rgba(80,80,80,0.45); pointer-events: none; z-index: 5;
+  }
+  /* gray ring on enemy squares the selected piece can capture */
+  .square.move-capture::after {
+    content: ''; position: absolute; inset: 4px; border-radius: 50%;
+    border: 3px solid rgba(80,80,80,0.55);
+    background: transparent; pointer-events: none; z-index: 5;
+  }
 
   .move-tag {
     font-family: 'Space Mono', monospace;
@@ -148,25 +163,89 @@ document.addEventListener('DOMContentLoaded', () => {
   buildMoveList();
 });
 
+// returns reachable squares for the piece on sq (pseudo-legal, no check detection)
+function getMoves(pieces, sq) {
+  const piece = pieces[sq];
+  if (!piece) return [];
+  const color = piece[0], type = piece[1];
+  const file = sq.charCodeAt(0) - 97;
+  const rank = parseInt(sq[1]) - 1;
+  const moves = [];
+  const toSq    = (f, r) => String.fromCharCode(97 + f) + (r + 1);
+  const inBounds = (f, r) => f >= 0 && f < 8 && r >= 0 && r < 8;
+  const pieceAt  = (f, r) => pieces[toSq(f, r)];
+  const isEnemy  = (f, r) => { const p = pieceAt(f, r); return p && p[0] !== color; };
+  const isEmpty  = (f, r) => !pieceAt(f, r);
+  const slide = dirs => {
+    for (const [df, dr] of dirs) {
+      let f = file + df, r = rank + dr;
+      while (inBounds(f, r)) {
+        if (pieceAt(f, r)) { if (isEnemy(f, r)) moves.push(toSq(f, r)); break; }
+        moves.push(toSq(f, r));
+        f += df; r += dr;
+      }
+    }
+  };
+  if      (type === 'R') slide([[1,0],[-1,0],[0,1],[0,-1]]);
+  else if (type === 'B') slide([[1,1],[1,-1],[-1,1],[-1,-1]]);
+  else if (type === 'Q') slide([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
+  else if (type === 'N') {
+    for (const [df, dr] of [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]) {
+      const f = file + df, r = rank + dr;
+      if (inBounds(f, r) && (!pieceAt(f, r) || isEnemy(f, r))) moves.push(toSq(f, r));
+    }
+  }
+  else if (type === 'K') {
+    for (const [df, dr] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+      const f = file + df, r = rank + dr;
+      if (inBounds(f, r) && (!pieceAt(f, r) || isEnemy(f, r))) moves.push(toSq(f, r));
+    }
+  }
+  else if (type === 'P') {
+    const dir = color === 'w' ? 1 : -1;
+    const startRank = color === 'w' ? 1 : 6;
+    if (inBounds(file, rank + dir) && isEmpty(file, rank + dir)) {
+      moves.push(toSq(file, rank + dir));
+      if (rank === startRank && isEmpty(file, rank + 2 * dir)) moves.push(toSq(file, rank + 2 * dir));
+    }
+    for (const df of [-1, 1]) {
+      if (inBounds(file + df, rank + dir) && isEnemy(file + df, rank + dir)) moves.push(toSq(file + df, rank + dir));
+    }
+  }
+  return moves;
+}
+
+// clears all move dots from the board then draws new ones for the given square
+function showMoves(containerId, pieces, sq) {
+  const boardEl = document.getElementById(containerId);
+  if (!boardEl) return;
+  boardEl.querySelectorAll('.move-dot, .move-capture').forEach(el => {
+    el.classList.remove('move-dot', 'move-capture');
+  });
+  for (const dest of getMoves(pieces, sq)) {
+    const el = boardEl.querySelector('[data-square="' + dest + '"]');
+    if (el) el.classList.add(pieces[dest] ? 'move-capture' : 'move-dot');
+  }
+}
+
 function onPieceClick(sq, piece) {
   if (answered) return;
 
-  // deselect the previously selected square before applying the new selection
+  // clear selection and move dots from the previously selected square
   document.querySelectorAll('#quiz-board .square').forEach(s => {
-    s.classList.remove('selected-sq', 'hl-selected');
+    s.classList.remove('selected-sq', 'hl-selected', 'move-dot', 'move-capture');
     s.querySelector('.overlay').style.background = '';
   });
 
   selectedSquare = sq;
   selectedPiece  = piece;
 
-  // highlight the newly clicked square with the blue selection overlay
   const el = document.querySelector(`#quiz-board [data-square="${sq}"]`);
-  if (el) {
-    el.classList.add('hl-selected');
-  }
+  if (el) el.classList.add('hl-selected');
 
-  // update the selected piece label below the instructions and reveal the submit button
+  // show possible moves as dots and capture rings
+  showMoves('quiz-board', Q_PIECES, sq);
+
   const pname = PIECE_NAMES[piece] || piece;
   document.getElementById('selected-label').textContent = `${pname} on ${sq}`;
   document.getElementById('selected-info').classList.add('show');
@@ -183,6 +262,11 @@ function submitAnswer() {
     data: JSON.stringify({ square: selectedSquare, piece: selectedPiece }),
     success: (resp) => {
       answered = true;
+
+      // clear move dots now that the answer is revealed
+      document.querySelectorAll('#quiz-board .move-dot, #quiz-board .move-capture').forEach(el => {
+        el.classList.remove('move-dot', 'move-capture');
+      });
 
       // highlight the correct answer square in green regardless of whether the user was right or wrong
       const correctEl = document.querySelector(`#quiz-board [data-square="${resp.answer_square}"]`);
