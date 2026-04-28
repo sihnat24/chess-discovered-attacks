@@ -125,8 +125,8 @@ QUIZ_QUESTIONS = [
         "id": 3,
         "category": "Spot the Opponent's Attack",
         "title": "Spot the Opponent's Attack!",
-        "instructions": "White's move. Black is setting up a discovered attack. Click the white piece that is the TARGET — the piece in danger.",
-        "hint": "Which of your pieces are not defended?",
+        "instructions": "Black is about to unleash a discovered attack. Click the WHITE piece that is in danger — the target of black's hidden threat.",
+        "hint": "Find a black piece that could move to reveal a long-range attacker behind it. Where does that attacker's line point?",
         "answer_square": "a1",
         "wrong_message": "Not quite! Look for a line of attack that is about to be opened up.",
         "correct_message": "Correct! The white king on a1 is the target — if black moves the knight on e5, the queen reveals an attack!",
@@ -149,8 +149,8 @@ QUIZ_QUESTIONS = [
         "id": 4,
         "category": "Spot the Opponent's Attack",
         "title": "Spot the Opponent's Attack!",
-        "instructions": "White is threatening a discovered attack. Click the white piece you should move to create the discovered attack.",
-        "hint": "Which white piece is blocking a long-range attacker from targeting a black piece?",
+        "instructions": "You're playing as white (viewing from black's side). Find the white piece that should move to unleash a discovered attack — it can even capture on its way!",
+        "hint": "Look for a white piece blocking a long-range attacker. Can it move AND land on a threatening square at the same time?",
         "answer_square": "b3",
         "wrong_message": "Not quite! Here the blocker may even move to take a piece. Look for something that can lure the target out!",
         "correct_message": "Correct! The bishop on b3 is the blocking piece — moving it to take the pawn on f7 is checkmate for black, alongside rook at e5!",
@@ -175,7 +175,7 @@ QUIZ_QUESTIONS = [
     "category": "Putting It Together",
     "title": "Putting It Together!",
     "instructions": "White's move. Find the white piece that creates a discovered attack — the moving piece should create one threat while revealing a second threat behind it.",
-    "hint": "Can a knight move create two threats at once?",
+    "hint": "Look for a piece that can move to an aggressive square while also stepping out of the way of a long-range attacker behind it.",
     "answer_square": "c4",
     "wrong_message": "Not quite! Look for a piece whose move both attacks something AND reveals a long-range attacker behind it.",
     "correct_message": "Correct! Knight on c4 takes the knight on d6 — attacking the black queen on c8 — while revealing the bishop on b3, which now checks the black king on g8!",
@@ -233,27 +233,32 @@ def quiz(q_num):
 
 @app.route('/quiz/<int:q_num>/answer', methods=['POST'])
 def submit_answer(q_num):
-    data = request.get_json()
+    data            = request.get_json()
     selected_square = data.get('square')
-    selected_piece = data.get('piece')
-    question = QUIZ_QUESTIONS[q_num - 1]
-    correct = (selected_square == question['answer_square'])
+    selected_piece  = data.get('piece')
+    attempt         = data.get('attempt', 1)
+    question        = QUIZ_QUESTIONS[q_num - 1]
+    correct         = (selected_square == question['answer_square'])
 
     answers = session.get('quiz_answers', {})
-    answers[str(q_num)] = {
-        'selected_square': selected_square,
-        'selected_piece': selected_piece,
-        'correct': correct,
-        'timestamp': datetime.now().isoformat(),
-        'category': question['category']
-    }
+    key = str(q_num)
+    if key not in answers or not answers[key].get('correct'):
+        answers[key] = {
+            'selected_square': selected_square,
+            'selected_piece':  selected_piece,
+            'correct':         correct,
+            'attempts':        attempt,
+            'timestamp':       datetime.now().isoformat(),
+            'category':        question['category']
+        }
     session['quiz_answers'] = answers
     session.modified = True
 
     return jsonify({
-        'correct': correct,
-        'message': question['correct_message'] if correct else question['wrong_message'],
-        'answer_square': question['answer_square']
+        'correct':       correct,
+        'message':       question['correct_message'] if correct else question['wrong_message'],
+        'answer_square': question['answer_square'],
+        'wrong_square':  selected_square,
     })
 
 @app.route('/results')

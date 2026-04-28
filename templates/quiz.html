@@ -3,7 +3,6 @@
 
 {% block extra_head %}
 <style>
-  /* quiz-specific overrides: styles that apply only to the quiz page, extending base.html defaults */
   .quiz-status {
     font-family: 'Space Mono', monospace;
     font-size: 0.9rem;
@@ -34,14 +33,12 @@
   .square.selected-sq { outline: 3px solid #16a34a; outline-offset: -3px; }
   .hl-selected .overlay { background: rgba(22, 163, 74, 0.55); }
 
-  /* gray dot on empty squares the selected piece can reach */
   .square.move-dot::after {
     content: ''; position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 28%; height: 28%; border-radius: 50%;
     background: rgba(80,80,80,0.45); pointer-events: none; z-index: 5;
   }
-  /* gray ring on enemy squares the selected piece can capture */
   .square.move-capture::after {
     content: ''; position: absolute; inset: 4px; border-radius: 50%;
     border: 3px solid rgba(80,80,80,0.55);
@@ -55,11 +52,6 @@
     color: var(--tan-dark);
   }
 
-  /* feedback popup correct/wrong styling: adds a checkmark prefix for correct answers and an x for wrong ones */
-  #feedback-popup { font-family: 'Courier Prime', monospace; }
-  #feedback-popup.correct-pop #feedback-icon::before { content: '✓ '; color: #16a34a; }
-  #feedback-popup:not(.correct-pop) #feedback-icon::before { content: '✗ '; color: var(--red-label); }
-
   .q-category-badge {
     display: inline-block;
     padding: 3px 12px;
@@ -72,13 +64,101 @@
   .cat-identification { background: var(--purple-label); }
   .cat-spot           { background: var(--red-label); }
   .cat-putting        { background: var(--green-btn); }
+
+  /* attempt pips */
+  .attempt-pips {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .attempt-pip {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--tan-dark);
+    background: var(--tan-light);
+    transition: background 0.2s;
+  }
+  .attempt-pip.used-wrong { background: #dc2626; border-color: #dc2626; }
+  .attempt-pip.used-right { background: #16a34a; border-color: #16a34a; }
+
+  /* feedback popup */
+  #feedback-popup {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0;
+    max-width: 380px; width: 92%;
+    border-radius: 10px;
+    padding: 24px 28px;
+    z-index: 1000;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    font-family: 'Courier Prime', monospace;
+    text-align: center;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  #feedback-popup.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  #feedback-popup.pop-correct {
+    background: #f0fdf4;
+    border: 2.5px solid #16a34a;
+  }
+  #feedback-popup.pop-wrong {
+    background: #fef2f2;
+    border: 2.5px solid #dc2626;
+  }
+  #feedback-popup.pop-reveal {
+    background: #fffbeb;
+    border: 2.5px solid #d97706;
+  }
+
+  .pop-icon  { font-size: 2rem; margin-bottom: 8px; line-height: 1; }
+  .pop-title {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  .pop-correct .pop-title { color: #15803d; }
+  .pop-wrong   .pop-title { color: #dc2626; }
+  .pop-reveal  .pop-title { color: #b45309; }
+
+  .pop-message {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #374151;
+    margin-bottom: 16px;
+  }
+  .pop-attempts-left {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+  .pop-btn {
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    border: 2px solid;
+    border-radius: 5px;
+    padding: 9px 22px;
+    cursor: pointer;
+    width: 100%;
+    transition: filter 0.15s;
+  }
+  .pop-btn:hover { filter: brightness(1.08); }
+  .pop-btn-green { background: #16a34a; color: #fff; border-color: #15803d; }
+  .pop-btn-red   { background: #dc2626; color: #fff; border-color: #b91c1c; }
+  .pop-btn-amber { background: #d97706; color: #fff; border-color: #b45309; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-3 py-3" style="max-width:1100px;margin:0 auto;">
 
-  <!-- header row: shows the category badge, question title, and the progress dot bar -->
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
       {% set cat_class = 'cat-identification' if 'Identification' in question.category else ('cat-spot' if 'Spot' in question.category else 'cat-putting') %}
@@ -95,16 +175,21 @@
     </div>
   </div>
 
-  <!-- main layout: three-column grid with instructions left, interactive board center, and piece key right -->
   <div class="row g-3 align-items-start">
 
-    <!-- left panel: question instructions, selected piece info, submit button, hint toggle, and quiz menu link -->
     <div class="col-12 col-md-3 order-2 order-md-1">
       <div class="move-tag mb-2">white's move</div>
       <p style="font-size:0.95rem;line-height:1.65;color:#6b6560;">{{ question.instructions }}</p>
 
       <div id="selected-info" class="selected-indicator">
         Selected: <span id="selected-label">—</span>
+      </div>
+
+      <div class="attempt-pips" id="attempt-pips">
+        <span style="font-size:0.78rem;font-weight:700;color:var(--tan-dark);">Attempts:</span>
+        <div class="attempt-pip" id="pip-1"></div>
+        <div class="attempt-pip" id="pip-2"></div>
+        <div class="attempt-pip" id="pip-3"></div>
       </div>
 
       <button id="submit-btn" class="btn-chess btn-orange mt-3 w-100" onclick="submitAnswer()">
@@ -119,7 +204,6 @@
       <a href="/quiz" class="btn-chess btn-tan mt-3 w-100" style="text-align:center;">← Quiz Menu</a>
     </div>
 
-    <!-- center panel: renders the interactive chessboard where the user clicks to select their answer -->
     <div class="col-12 col-md-6 order-1 order-md-2 d-flex flex-column align-items-center">
       <div class="board-wrap">
         <div class="chess-board" id="quiz-board"></div>
@@ -127,35 +211,48 @@
       <div id="board-caption" style="text-align:center;font-size:0.85rem;font-style:italic;color:var(--tan-dark);margin-top:6px;min-height:1.2em;"></div>
     </div>
 
-    <!-- right panel: lists all pieces on the board by position and shows the color-coded role key -->
     <div class="col-12 col-md-3 order-3">
       <div style="background:var(--panel);border:2px solid var(--text);border-radius:4px;padding:10px 12px;">
         <p class="fw-bold mb-1" style="color:var(--text-light);font-size:0.85rem;">Board Layout</p>
         <div id="move-list" style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--text-light);max-height:160px;overflow-y:auto;line-height:1.7;"></div>
       </div>
-
     </div>
   </div>
+</div>
+
+<div id="overlay-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:999;"></div>
+<div id="feedback-popup">
+  <div class="pop-icon"         id="pop-icon"></div>
+  <div class="pop-title"        id="pop-title"></div>
+  <div class="pop-message"      id="pop-message"></div>
+  <div class="pop-attempts-left" id="pop-attempts-left"></div>
+  <button class="pop-btn"       id="pop-btn"></button>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-const Q_NUM     = {{ q_num }};
-const Q_TOTAL   = {{ total }};
-const Q_PIECES  = {{ question.pieces | tojson }};
-const Q_THEME   = "{{ question.board_theme }}";
-const Q_CLICKABLE = "{{ question.clickable }}";
-const Q_ANS_SQ  = "{{ question.answer_square }}";
-const Q_FLIPPED = {{ 'true' if question.get('perspective','white') == 'black' else 'false' }};
+const Q_NUM         = {{ q_num }};
+const Q_TOTAL       = {{ total }};
+const Q_PIECES      = {{ question.pieces | tojson }};
+const Q_THEME       = "{{ question.board_theme }}";
+const Q_CLICKABLE   = "{{ question.clickable }}";
+const Q_ANS_SQ      = "{{ question.answer_square }}";
+const Q_FLIPPED     = {{ 'true' if question.get('perspective','white') == 'black' else 'false' }};
+const Q_CORRECT_MSG = {{ question.correct_message | tojson }};
+const Q_WRONG_MSG   = {{ question.wrong_message | tojson }};
 
+const MAX_ATTEMPTS = 3;
+let attemptsUsed   = 0;
 let selectedSquare = null;
 let selectedPiece  = null;
 let answered       = false;
 
 const PIECE_NAMES = {
-  wK:'White King', wQ:'White Queen', wR:'White Rook', wB:'White Bishop', wN:'White Knight', wP:'White Pawn',
-  bK:'Black King', bQ:'Black Queen', bR:'Black Rook', bB:'Black Bishop', bN:'Black Knight', bP:'Black Pawn'
+  wK:'White King',  wQ:'White Queen', wR:'White Rook',
+  wB:'White Bishop',wN:'White Knight',wP:'White Pawn',
+  bK:'Black King',  bQ:'Black Queen', bR:'Black Rook',
+  bB:'Black Bishop',bN:'Black Knight',bP:'Black Pawn'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -163,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
   buildMoveList();
 });
 
-// returns reachable squares for the piece on sq (pseudo-legal, no check detection)
 function getMoves(pieces, sq) {
   const piece = pieces[sq];
   if (!piece) return [];
@@ -171,11 +267,11 @@ function getMoves(pieces, sq) {
   const file = sq.charCodeAt(0) - 97;
   const rank = parseInt(sq[1]) - 1;
   const moves = [];
-  const toSq    = (f, r) => String.fromCharCode(97 + f) + (r + 1);
-  const inBounds = (f, r) => f >= 0 && f < 8 && r >= 0 && r < 8;
-  const pieceAt  = (f, r) => pieces[toSq(f, r)];
-  const isEnemy  = (f, r) => { const p = pieceAt(f, r); return p && p[0] !== color; };
-  const isEmpty  = (f, r) => !pieceAt(f, r);
+  const toSq     = (f, r) => String.fromCharCode(97 + f) + (r + 1);
+  const inBounds  = (f, r) => f >= 0 && f < 8 && r >= 0 && r < 8;
+  const pieceAt   = (f, r) => pieces[toSq(f, r)];
+  const isEnemy   = (f, r) => { const p = pieceAt(f, r); return p && p[0] !== color; };
+  const isEmpty   = (f, r) => !pieceAt(f, r);
   const slide = dirs => {
     for (const [df, dr] of dirs) {
       let f = file + df, r = rank + dr;
@@ -186,70 +282,62 @@ function getMoves(pieces, sq) {
       }
     }
   };
-  if      (type === 'R') slide([[1,0],[-1,0],[0,1],[0,-1]]);
-  else if (type === 'B') slide([[1,1],[1,-1],[-1,1],[-1,-1]]);
-  else if (type === 'Q') slide([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
-  else if (type === 'N') {
-    for (const [df, dr] of [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]) {
-      const f = file + df, r = rank + dr;
-      if (inBounds(f, r) && (!pieceAt(f, r) || isEnemy(f, r))) moves.push(toSq(f, r));
+  if      (type==='R') slide([[1,0],[-1,0],[0,1],[0,-1]]);
+  else if (type==='B') slide([[1,1],[1,-1],[-1,1],[-1,-1]]);
+  else if (type==='Q') slide([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
+  else if (type==='N') {
+    for (const [df,dr] of [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]) {
+      const f=file+df, r=rank+dr;
+      if (inBounds(f,r) && (!pieceAt(f,r)||isEnemy(f,r))) moves.push(toSq(f,r));
     }
   }
-  else if (type === 'K') {
-    for (const [df, dr] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
-      const f = file + df, r = rank + dr;
-      if (inBounds(f, r) && (!pieceAt(f, r) || isEnemy(f, r))) moves.push(toSq(f, r));
+  else if (type==='K') {
+    for (const [df,dr] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+      const f=file+df, r=rank+dr;
+      if (inBounds(f,r) && (!pieceAt(f,r)||isEnemy(f,r))) moves.push(toSq(f,r));
     }
   }
-  else if (type === 'P') {
-    const dir = color === 'w' ? 1 : -1;
-    const startRank = color === 'w' ? 1 : 6;
-    if (inBounds(file, rank + dir) && isEmpty(file, rank + dir)) {
-      moves.push(toSq(file, rank + dir));
-      if (rank === startRank && isEmpty(file, rank + 2 * dir)) moves.push(toSq(file, rank + 2 * dir));
+  else if (type==='P') {
+    const dir=color==='w'?1:-1, startRank=color==='w'?1:6;
+    if (inBounds(file,rank+dir) && isEmpty(file,rank+dir)) {
+      moves.push(toSq(file,rank+dir));
+      if (rank===startRank && isEmpty(file,rank+2*dir)) moves.push(toSq(file,rank+2*dir));
     }
-    for (const df of [-1, 1]) {
-      if (inBounds(file + df, rank + dir) && isEnemy(file + df, rank + dir)) moves.push(toSq(file + df, rank + dir));
-    }
+    for (const df of [-1,1])
+      if (inBounds(file+df,rank+dir) && isEnemy(file+df,rank+dir)) moves.push(toSq(file+df,rank+dir));
   }
   return moves;
 }
 
-// clears all move dots from the board then draws new ones for the given square
 function showMoves(containerId, pieces, sq) {
   const boardEl = document.getElementById(containerId);
   if (!boardEl) return;
-  boardEl.querySelectorAll('.move-dot, .move-capture').forEach(el => {
-    el.classList.remove('move-dot', 'move-capture');
-  });
+  boardEl.querySelectorAll('.move-dot,.move-capture').forEach(el =>
+    el.classList.remove('move-dot','move-capture'));
   for (const dest of getMoves(pieces, sq)) {
-    const el = boardEl.querySelector('[data-square="' + dest + '"]');
+    const el = boardEl.querySelector('[data-square="'+dest+'"]');
     if (el) el.classList.add(pieces[dest] ? 'move-capture' : 'move-dot');
   }
 }
 
 function onPieceClick(sq, piece) {
   if (answered) return;
-
-  // clear selection and move dots from the previously selected square
   document.querySelectorAll('#quiz-board .square').forEach(s => {
-    s.classList.remove('selected-sq', 'hl-selected', 'move-dot', 'move-capture');
+    s.classList.remove('selected-sq','hl-selected','move-dot','move-capture');
     s.querySelector('.overlay').style.background = '';
   });
-
   selectedSquare = sq;
   selectedPiece  = piece;
-
-  const el = document.querySelector(`#quiz-board [data-square="${sq}"]`);
-  if (el) el.classList.add('hl-selected');
-
-  // show possible moves as dots and capture rings
+  document.querySelector(`#quiz-board [data-square="${sq}"]`)?.classList.add('hl-selected');
   showMoves('quiz-board', Q_PIECES, sq);
-
-  const pname = PIECE_NAMES[piece] || piece;
-  document.getElementById('selected-label').textContent = `${pname} on ${sq}`;
+  document.getElementById('selected-label').textContent = `${PIECE_NAMES[piece]||piece} on ${sq}`;
   document.getElementById('selected-info').classList.add('show');
   document.getElementById('submit-btn').classList.add('show');
+}
+
+function updatePips(attemptNum, wasCorrect) {
+  document.getElementById(`pip-${attemptNum}`)
+    ?.classList.add(wasCorrect ? 'used-right' : 'used-wrong');
 }
 
 function submitAnswer() {
@@ -259,62 +347,119 @@ function submitAnswer() {
     url: `/quiz/${Q_NUM}/answer`,
     method: 'POST',
     contentType: 'application/json',
-    data: JSON.stringify({ square: selectedSquare, piece: selectedPiece }),
+    data: JSON.stringify({ square: selectedSquare, piece: selectedPiece, attempt: attemptsUsed + 1 }),
     success: (resp) => {
-      answered = true;
+      attemptsUsed++;
+      updatePips(attemptsUsed, resp.correct);
+      document.querySelectorAll('#quiz-board .move-dot,#quiz-board .move-capture')
+        .forEach(el => el.classList.remove('move-dot','move-capture'));
 
-      // clear move dots now that the answer is revealed
-      document.querySelectorAll('#quiz-board .move-dot, #quiz-board .move-capture').forEach(el => {
-        el.classList.remove('move-dot', 'move-capture');
-      });
-
-      // highlight the correct answer square in green regardless of whether the user was right or wrong
-      const correctEl = document.querySelector(`#quiz-board [data-square="${resp.answer_square}"]`);
-      if (correctEl) {
-        correctEl.classList.remove('hl-selected','hl-wrong','hl-blocker','hl-attacker','hl-target');
-        correctEl.classList.add('hl-correct');
-      }
-
-      // if the user selected the wrong square, also highlight their pick in red
-      if (!resp.correct && selectedSquare !== resp.answer_square) {
-        const wrongEl = document.querySelector(`#quiz-board [data-square="${selectedSquare}"]`);
-        if (wrongEl) {
-          wrongEl.classList.remove('hl-selected');
-          wrongEl.classList.add('hl-wrong');
-        }
-      }
-
-      document.getElementById('submit-btn').classList.remove('show');
-
-      const isLast = Q_NUM >= Q_TOTAL;
+      const isLast  = Q_NUM >= Q_TOTAL;
       const nextUrl = isLast ? '/results' : `/quiz/${Q_NUM + 1}`;
-      const btnText = isLast ? 'See Results →' : 'Next Question →';
+      const nextTxt = isLast ? 'See Results →' : 'Next Question →';
 
-      showFeedback(resp.message, resp.correct, () => {
-        window.location.href = nextUrl;
-      });
-      document.getElementById('feedback-btn').textContent = btnText;
+      if (resp.correct) {
+        answered = true;
+        highlightSquare('quiz-board', resp.answer_square, 'hl-correct');
+        document.getElementById('submit-btn').classList.remove('show');
+        showCustomFeedback({
+          type: 'correct',
+          icon: '✓',
+          title: 'Correct!',
+          message: Q_CORRECT_MSG,
+          sub: attemptsUsed === 1 ? 'First try!' : `Got it in ${attemptsUsed} attempts.`,
+          btnText: nextTxt,
+          onBtn: () => window.location.href = nextUrl
+        });
+
+      } else if (attemptsUsed >= MAX_ATTEMPTS) {
+        // out of attempts — wrong, don't reveal yet
+        answered = true;
+        const wrongSq = selectedSquare;
+        document.querySelector(`#quiz-board [data-square="${wrongSq}"]`)?.classList.add('hl-wrong');
+        document.getElementById('submit-btn').classList.remove('show');
+        showCustomFeedback({
+          type: 'wrong',
+          icon: '✗',
+          title: 'Out of attempts!',
+          message: 'You\'ve used all 3 attempts on this one.',
+          sub: '',
+          btnText: 'Reveal Answer',
+          onBtn: () => {
+            // now reveal the correct square and show explanation
+            document.querySelector(`#quiz-board [data-square="${resp.answer_square}"]`)?.classList.add('hl-correct');
+            const correctPiece = PIECE_NAMES[Q_PIECES[resp.answer_square]] || '';
+            showCustomFeedback({
+              type: 'reveal',
+              icon: '👁',
+              title: 'The Answer',
+              message: Q_CORRECT_MSG,
+              sub: correctPiece ? `The answer was the ${correctPiece} on ${resp.answer_square}.` : `The answer was ${resp.answer_square}.`,
+              btnText: nextTxt,
+              onBtn: () => window.location.href = nextUrl
+            });
+          }
+        });
+
+      } else {
+        const remaining = MAX_ATTEMPTS - attemptsUsed;
+        const wrongSq   = selectedSquare;
+        document.querySelector(`#quiz-board [data-square="${wrongSq}"]`)?.classList.add('hl-wrong');
+        document.getElementById('submit-btn').classList.remove('show');
+        document.getElementById('selected-info').classList.remove('show');
+        selectedSquare = null;
+        selectedPiece  = null;
+        showCustomFeedback({
+          type: 'wrong',
+          icon: '✗',
+          title: 'Not quite!',
+          message: Q_WRONG_MSG,
+          sub: `${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
+          btnText: 'Try Again',
+          onBtn: () => {
+            renderBoard('quiz-board', Q_PIECES, Q_THEME, Q_CLICKABLE, onPieceClick, Q_FLIPPED);
+            document.querySelector(`#quiz-board [data-square="${wrongSq}"]`)?.classList.add('hl-wrong');
+          }
+        });
+      }
     }
   });
 }
 
+function showCustomFeedback({ type, icon, title, message, sub, btnText, onBtn }) {
+  const popup = document.getElementById('feedback-popup');
+  const bg    = document.getElementById('overlay-bg');
+  popup.className = `pop-${type}`;
+  document.getElementById('pop-icon').textContent         = icon;
+  document.getElementById('pop-title').textContent        = title;
+  document.getElementById('pop-message').textContent      = message;
+  document.getElementById('pop-attempts-left').textContent = sub || '';
+  const btn = document.getElementById('pop-btn');
+  btn.textContent = btnText;
+  btn.className   = `pop-btn pop-btn-${type === 'correct' ? 'green' : type === 'reveal' ? 'amber' : 'red'}`;
+  btn.onclick = () => {
+    popup.classList.remove('visible');
+    bg.style.display = 'none';
+    setTimeout(() => { popup.style.display = 'none'; if (onBtn) onBtn(); }, 180);
+  };
+  bg.style.display    = 'block';
+  popup.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('visible')));
+}
+
 function toggleHint() {
-  const box = document.getElementById('hint-box');
-  box.classList.toggle('show');
+  document.getElementById('hint-box').classList.toggle('show');
 }
 
 function buildMoveList() {
-  const files = ['a','b','c','d','e','f','g','h'];
-  const ranks = [8,7,6,5,4,3,2,1];
   const lines = [];
-  for (const rank of ranks) {
-    for (const file of files) {
-      const sq = file + rank;
-      const p = Q_PIECES[sq];
+  for (const rank of [8,7,6,5,4,3,2,1]) {
+    for (const file of ['a','b','c','d','e','f','g','h']) {
+      const sq = file + rank, p = Q_PIECES[sq];
       if (p) {
-        const n = p[0] === 'w' ? 'White' : 'Black';
+        const side = p[0]==='w' ? 'White' : 'Black';
         const type = ({K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'Pawn'})[p[1]] || p[1];
-        lines.push(`${n} ${type}: ${sq}`);
+        lines.push(`${side} ${type}: ${sq}`);
       }
     }
   }
