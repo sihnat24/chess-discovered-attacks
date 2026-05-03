@@ -14,24 +14,24 @@
       --red-label: #dc2626; --purple-label: #935430;
       --board-light-brown: #e3dfd7; --board-dark-brown: #935430;
       --board-light-green: #e3dfd7; --board-dark-green: #935430;
-      --hl-blocker: rgba(147,84,48,0.65); --hl-target: rgba(220,38,38,0.7);
-      --hl-attacker: rgba(175,166,149,0.75); --hl-correct: rgba(22,163,74,0.6);
+      --hl-blocker: rgba(0,188,212,0.65); --hl-target: rgba(220,38,38,0.7);
+      --hl-attacker: rgba(50,205,50,0.72); --hl-correct: rgba(22,163,74,0.6);
       --hl-wrong: rgba(220,38,38,0.6); --hl-selected: rgba(147,84,48,0.5);
     }
     * { box-sizing: border-box; }
+    html { overflow-y: scroll; }
     body { background: var(--tan); color: var(--text); font-family: 'Courier Prime','Courier New',monospace; min-height: 100vh; }
 
     .chess-nav { display:flex; gap:12px; padding:12px 20px; background:var(--tan); align-items:center; justify-content:flex-end; }
-    .btn-nav { font-family:inherit; font-weight:700; font-size:1rem; border:2.5px solid var(--text); border-radius:4px; padding:6px 18px; text-decoration:none; cursor:pointer; transition:filter 0.15s; }
+    .btn-nav { font-family:inherit; font-weight:700; font-size:1.5rem; border:2.5px solid var(--text); border-radius:4px; padding:9px 27px; text-decoration:none; cursor:pointer; transition:filter 0.15s; }
     .btn-nav:hover { filter:brightness(1.12); }
     .btn-home-nav { background:var(--orange-btn); color:var(--text-light); }
-    .btn-settings-nav { background:var(--green-btn); color:var(--text-light); }
 
     .page-title { text-align:center; font-family:'Space Mono',monospace; font-weight:700; font-size:clamp(1.3rem,3vw,2rem); color:var(--tan-dark); margin:10px 0 4px; }
 
     /* board: styles the chessboard grid, squares, labels, and piece rendering */
     .board-wrap { display:inline-block; border:3px solid var(--text); box-shadow:4px 4px 14px rgba(0,0,0,0.4); }
-    .chess-board { display:grid; grid-template-columns:22px repeat(8,1fr); grid-template-rows:22px repeat(8,1fr) 22px; width:400px; height:460px; user-select:none; }
+    .chess-board { display:grid; grid-template-columns:22px repeat(8,1fr); grid-template-rows:22px repeat(8,1fr) 22px; width:400px; height:460px; user-select:none; position:relative; }
     .board-label { display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:var(--tan-dark); background:var(--tan-light); }
     .board-corner { background:var(--tan-light); }
     .square { position:relative; display:flex; align-items:center; justify-content:center; transition:filter 0.1s; }
@@ -67,11 +67,11 @@
     .key-box { background:var(--tan-light); border:2px solid var(--tan-dark); border-radius:4px; padding:10px 14px; }
     .key-title { font-weight:700; font-size:0.95rem; color:var(--text); margin-bottom:8px; }
     .key-item { padding:4px 10px; border-radius:3px; color:var(--text-light); font-size:0.8rem; font-weight:700; margin-bottom:5px; text-align:center; }
-    .ki-blocker { background:var(--purple-label); } .ki-target { background:var(--red-label); } .ki-attacker { background:#000000; color:var(--text-light); }
+    .ki-blocker { background:#009ab5; } .ki-target { background:var(--red-label); } .ki-attacker { background:#1faa1f; color:#fff; }
 
     /* labels: colored inline tags used to identify piece roles like blocker, attacker, and target */
     .comp-label { display:inline-block; padding:3px 10px; border-radius:3px; color:#fff; font-weight:700; font-size:0.95rem; margin-right:4px; }
-    .cl-blocker { background:var(--purple-label); } .cl-attacker { background:#000000; color:var(--text-light); } .cl-target { background:var(--red-label); }
+    .cl-blocker { background:#009ab5; } .cl-attacker { background:#1faa1f; color:#fff; } .cl-target { background:var(--red-label); }
 
     /* quiz home cards: clickable category cards shown on the quiz selection screen */
     .quiz-card { background:var(--panel); border:2.5px solid var(--tan-dark); border-radius:8px; padding:22px 16px; text-align:center; cursor:pointer; transition:transform 0.15s,filter 0.15s; color:var(--text); text-decoration:none; display:block; }
@@ -106,31 +106,11 @@
 {% block nav %}
 <nav class="chess-nav">
   <a href="/" class="btn-nav btn-home-nav">HOME</a>
-  <button class="btn-nav btn-settings-nav" data-bs-toggle="modal" data-bs-target="#settingsModal">Chessboard Settings</button>
 </nav>
 {% endblock %}
 
 {% block content %}{% endblock %}
 
-<!-- settings modal: lets users switch the chessboard color theme between classic brown and green -->
-<div class="modal fade" id="settingsModal" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content" style="background:var(--tan);font-family:'Courier Prime',monospace;border:2px solid var(--text);">
-      <div class="modal-header" style="border-bottom:1px solid var(--tan-dark);">
-        <h5 class="modal-title fw-bold">Chessboard Settings</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="fw-bold mb-2">Board Theme</p>
-        <div class="d-flex gap-2 mb-3">
-          <button class="btn-chess btn-tan theme-btn flex-fill" data-theme="brown">Classic</button>
-          <button class="btn-chess btn-tan theme-btn flex-fill" data-theme="green">Green</button>
-        </div>
-        <small style="color:var(--tan-dark)">Theme applies to learning boards. Quiz boards use their preset theme unless overridden.</small>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div id="overlay-bg"></div>
 <div id="feedback-popup">
@@ -199,13 +179,7 @@ function showFeedback(msg, isCorrect, onNext) {
   };
 }
 
-// theme buttons: save the selected theme to localstorage when a theme option is clicked
-document.querySelectorAll('.theme-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    localStorage.setItem('boardTheme', btn.dataset.theme);
-    btn.closest('.modal')?.querySelector('.btn-close')?.click();
-  });
-});
+
 </script>
 {% block scripts %}{% endblock %}
 </body>

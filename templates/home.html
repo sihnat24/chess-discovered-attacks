@@ -16,7 +16,7 @@
     <!-- learn card: form that posts to /start, initializing a new session and redirecting to lesson 1 -->
     <div class="col-12 col-sm-6">
       <form action="/start" method="POST">
-        <button type="submit" class="quiz-card w-100" style="border:none;">
+        <button type="submit" class="quiz-card w-100">
           <div class="ci">📖</div>
           <div class="ct">Start Learning!</div>
           <div class="cd">Walk through what a discovered attack is, how it works, and see real examples.</div>
@@ -44,6 +44,5 @@
 {% block nav %}
 <nav class="chess-nav">
   <a href="/" class="btn-nav btn-home-nav">HOME</a>
-  <button class="btn-nav btn-settings-nav" data-bs-toggle="modal" data-bs-target="#settingsModal">Chessboard Settings</button>
 </nav>
 {% endblock %}

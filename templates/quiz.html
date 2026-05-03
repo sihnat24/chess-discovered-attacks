@@ -82,13 +82,12 @@
   .attempt-pip.used-wrong { background: #dc2626; border-color: #dc2626; }
   .attempt-pip.used-right { background: #16a34a; border-color: #16a34a; }
 
-  /* feedback popup */
+  /* feedback popup: fixed centered overlay shown after answering */
   #feedback-popup {
     display: none;
     position: fixed;
     top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0.92);
-    opacity: 0;
+    transform: translate(-50%, -50%);
     max-width: 380px; width: 92%;
     border-radius: 10px;
     padding: 24px 28px;
@@ -96,11 +95,37 @@
     box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     font-family: 'Courier Prime', monospace;
     text-align: center;
-    transition: opacity 0.18s ease, transform 0.18s ease;
   }
-  #feedback-popup.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+
+  /* peek toggle: eye icon button at the top of the popup */
+  #peek-btn {
+    position: absolute;
+    top: 8px; right: 10px;
+    background: none; border: none;
+    font-size: 1.1rem; cursor: pointer;
+    opacity: 0.55; line-height: 1;
+    padding: 2px 4px; border-radius: 3px;
+    transition: opacity 0.15s;
+  }
+  #peek-btn:hover { opacity: 1; }
+
+  /* show-result pill: small floating button that appears when popup is hidden */
+  #show-result-pill {
+    display: none;
+    position: fixed;
+    bottom: 22px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--tan-dark);
+    color: #e3dfd7;
+    border: 2px solid var(--text);
+    border-radius: 20px;
+    padding: 7px 20px;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
   #feedback-popup.pop-correct {
     background: #f0fdf4;
@@ -204,14 +229,14 @@
       <a href="/quiz" class="btn-chess btn-tan mt-3 w-100" style="text-align:center;">← Quiz Menu</a>
     </div>
 
-    <div class="col-12 col-md-6 order-1 order-md-2 d-flex flex-column align-items-center">
+    <div class="col-12 col-md-7 order-1 order-md-2 d-flex flex-column align-items-center">
       <div class="board-wrap">
         <div class="chess-board" id="quiz-board"></div>
       </div>
       <div id="board-caption" style="text-align:center;font-size:0.85rem;font-style:italic;color:var(--tan-dark);margin-top:6px;min-height:1.2em;"></div>
     </div>
 
-    <div class="col-12 col-md-3 order-3">
+    <div class="col-12 col-md-2 order-3">
       <div style="background:var(--panel);border:2px solid var(--text);border-radius:4px;padding:10px 12px;">
         <p class="fw-bold mb-1" style="color:var(--text-light);font-size:0.85rem;">Board Layout</p>
         <div id="move-list" style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--text-light);max-height:160px;overflow-y:auto;line-height:1.7;"></div>
@@ -222,12 +247,14 @@
 
 <div id="overlay-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:999;"></div>
 <div id="feedback-popup">
-  <div class="pop-icon"         id="pop-icon"></div>
-  <div class="pop-title"        id="pop-title"></div>
-  <div class="pop-message"      id="pop-message"></div>
+  <button id="peek-btn" onclick="peekAtBoard()" title="Peek at board">✕</button>
+  <div class="pop-icon"          id="pop-icon"></div>
+  <div class="pop-title"         id="pop-title"></div>
+  <div class="pop-message"       id="pop-message"></div>
   <div class="pop-attempts-left" id="pop-attempts-left"></div>
-  <button class="pop-btn"       id="pop-btn"></button>
+  <button class="pop-btn"        id="pop-btn"></button>
 </div>
+<button id="show-result-pill" onclick="restorePopup()">See Feedback</button>
 {% endblock %}
 
 {% block scripts %}
@@ -430,21 +457,33 @@ function showCustomFeedback({ type, icon, title, message, sub, btnText, onBtn })
   const popup = document.getElementById('feedback-popup');
   const bg    = document.getElementById('overlay-bg');
   popup.className = `pop-${type}`;
-  document.getElementById('pop-icon').textContent         = icon;
-  document.getElementById('pop-title').textContent        = title;
-  document.getElementById('pop-message').textContent      = message;
+  document.getElementById('pop-icon').textContent          = icon;
+  document.getElementById('pop-title').textContent         = title;
+  document.getElementById('pop-message').textContent       = message;
   document.getElementById('pop-attempts-left').textContent = sub || '';
   const btn = document.getElementById('pop-btn');
   btn.textContent = btnText;
   btn.className   = `pop-btn pop-btn-${type === 'correct' ? 'green' : type === 'reveal' ? 'amber' : 'red'}`;
   btn.onclick = () => {
-    popup.classList.remove('visible');
-    bg.style.display = 'none';
-    setTimeout(() => { popup.style.display = 'none'; if (onBtn) onBtn(); }, 180);
+    popup.style.display = 'none';
+    bg.style.display    = 'none';
+    document.getElementById('show-result-pill').style.display = 'none';
+    if (onBtn) onBtn();
   };
   bg.style.display    = 'block';
   popup.style.display = 'block';
-  requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('visible')));
+}
+
+function peekAtBoard() {
+  document.getElementById('feedback-popup').style.display  = 'none';
+  document.getElementById('overlay-bg').style.display      = 'none';
+  document.getElementById('show-result-pill').style.display = 'block';
+}
+
+function restorePopup() {
+  document.getElementById('feedback-popup').style.display  = 'block';
+  document.getElementById('overlay-bg').style.display      = 'block';
+  document.getElementById('show-result-pill').style.display = 'none';
 }
 
 function toggleHint() {
