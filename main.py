@@ -49,7 +49,7 @@ LESSONS = [
         "content": "Here, we can move the rook to create two threats at the same time. Do you see the move?",
         "type": "example",
         "board": {
-            "a8": "bR", "a6": "bP", "b6": "bP", "c5": "bR",
+            "a8": "bR", "a6": "bP", "b6": "bP", 
             "d4": "bP", "c7": "bQ", "d7": "bP", "e7": "bP",
             "e7": "bP", "f7": "bB", "d8": "bK",
             "a2": "wP", "b2": "wP", "c2": "wP", "e2": "wQ",
@@ -60,10 +60,10 @@ LESSONS = [
     {
         "id": 6,
         "title": "After Rook to g7...",
-        "content": "After rook to g7, black is unable to defend both the rook and bishop simultaneously!",
+        "content": "black is unable to defend both the rook and bishop simultaneously!",
         "type": "reveal",
         "board": {
-            "a8": "bR", "a6": "bP", "b6": "bP", "c5": "bR",
+            "a8": "bR", "a6": "bP", "b6": "bP", 
             "d4": "bP", "c7": "bQ", "d7": "bP", "e7": "bP",
             "e7": "bP", "f7": "bB", "d8": "bK",
             "a2": "wP", "b2": "wP", "c2": "wP", "e2": "wQ",
@@ -145,7 +145,7 @@ QUIZ_QUESTIONS = [
         },
         "clickable": "w"
     },
-    #this one is not setup correctly
+
         {
         "id": 4,
         "category": "Spot the Opponent's Attack",
