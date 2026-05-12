@@ -1,7 +1,7 @@
 
 # Group Members
 
-Name: Severin Ihnat | Github: sihnat24
+Severin Ihnat | sihnat24
 
 
 # Spotting Discovered Attacks in Chess
