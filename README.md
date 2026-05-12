@@ -1,3 +1,9 @@
+
+# Group Members
+
+Name: Severin Ihnat | Github: sihnat24
+
+
 # Spotting Discovered Attacks in Chess
 
 An interactive web app for learning and practicing the chess tactic of **discovered attacks** — built as a UI Design project at Columbia University.
